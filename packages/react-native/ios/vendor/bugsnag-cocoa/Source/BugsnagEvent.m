@@ -480,7 +480,14 @@ NSDictionary *BSGParseCustomException(NSDictionary *report,
         }
         self.breadcrumbs = [crumbs copy];
 
-        _handledState = handledState;
+        if (handledState == nil) {
+            // initialise a default value
+            _handledState = [BugsnagHandledState handledStateWithSeverityReason:HandledException
+                                                                       severity:BSGSeverityWarning
+                                                                      attrValue:nil];
+        } else {
+            _handledState = handledState;
+        }
         _severity = handledState.currentSeverity;
         _session = session;
         _threads = [NSMutableArray new];
