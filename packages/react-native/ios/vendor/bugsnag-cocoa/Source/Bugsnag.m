@@ -59,6 +59,8 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
 - (void)internalClientNotify:(NSException *_Nonnull)exception
                     withData:(NSDictionary *_Nullable)metadata
                        block:(BugsnagOnErrorBlock _Nullable)block;
+- (void)addRuntimeVersionInfo:(NSString *)info
+                      withKey:(NSString *)key;
 @property (nonatomic) NSString *codeBundleId;
 @end
 
@@ -236,6 +238,13 @@ static BugsnagClient *bsg_g_bugsnag_client = NULL;
       formatter.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
     });
     return formatter;
+}
+
++ (void)addRuntimeVersionInfo:(NSString *)info
+                      withKey:(NSString *)key {
+    if ([self bugsnagStarted]) {
+        [self.client addRuntimeVersionInfo:info withKey:key];
+    }
 }
 
 // =============================================================================

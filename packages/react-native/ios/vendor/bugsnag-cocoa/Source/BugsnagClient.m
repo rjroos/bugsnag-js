@@ -103,6 +103,20 @@ static bool hasRecordedSessions;
 @property NSUInteger handledCount;
 @end
 
+
+@interface BugsnagAppWithState ()
++ (BugsnagAppWithState *)appWithDictionary:(NSDictionary *)event
+                                    config:(BugsnagConfiguration *)config
+                              codeBundleId:(NSString *)codeBundleId;
+- (NSDictionary *)toDict;
+@end
+
+@interface BugsnagDeviceWithState ()
++ (BugsnagDeviceWithState *)deviceWithDictionary:(NSDictionary *)event;
+- (NSDictionary *)toDictionary;
+- (void)appendRuntimeInfo:(NSDictionary *)info;
+@end
+
 /**
  *  Handler executed when the application crashes. Writes information about the
  *  current application state using the crash report writer.
@@ -276,6 +290,7 @@ void BSGWriteSessionCrashData(BugsnagSession *session) {
 // The previous device orientation - iOS only
 @property (nonatomic, strong) NSString *lastOrientation;
 #endif
+@property NSMutableDictionary *extraRuntimeInfo;
 @end
 
 @interface BugsnagConfiguration ()
@@ -372,6 +387,7 @@ NSString *_lastOrientation = nil;
                                                                       configuration:configuration];
         }
 
+        self.extraRuntimeInfo = [NSMutableDictionary new];
         self.metadataLock = [[NSLock alloc] init];
         self.configuration.metadata.delegate = self;
         self.configuration.config.delegate = self;
@@ -915,6 +931,7 @@ NSString *const BSGBreadcrumbLoadedMessage = @"Bugsnag loaded";
                                                      handledState:handledState
                                                           session:self.sessionTracker.runningSession];
     event.originalError = exception;
+    [event.device appendRuntimeInfo:self.extraRuntimeInfo];
     
     if (block != nil && !block(event)) { // skip notifying if callback false
         return;
@@ -1411,6 +1428,43 @@ NSString *const BSGBreadcrumbLoadedMessage = @"Bugsnag loaded";
                        withKey:(NSString *_Nonnull)key
 {
     [self.metadata clearMetadataFromSection:sectionName withKey:key];
+}
+
+// MARK: - methods used by React Native for collecting payload data
+
+- (NSDictionary *)collectAppWithState {
+    NSDictionary *systemInfo = [BSG_KSSystemInfo systemInfo];
+    BugsnagAppWithState *app = [BugsnagAppWithState appWithDictionary:@{@"system": systemInfo}
+                                                               config:self.configuration
+                                                         codeBundleId:self.codeBundleId];
+    return [app toDict];
+}
+
+- (NSDictionary *)collectDeviceWithState {
+    NSDictionary *systemInfo = [BSG_KSSystemInfo systemInfo];
+    BugsnagDeviceWithState *device = [BugsnagDeviceWithState deviceWithDictionary:@{@"system": systemInfo}];
+    return [device toDictionary];
+}
+
+- (NSArray *)collectBreadcrumbs {
+    return @[
+        // TODO implement
+    ];
+}
+
+- (NSArray *)collectThreads {
+    return @[
+        // TODO implement
+    ];
+}
+
+- (void)addRuntimeVersionInfo:(NSString *)info
+                      withKey:(NSString *)key {
+    [self.sessionTracker addRuntimeVersionInfo:info
+                                       withKey:key];
+    if (info != nil && key != nil) {
+        self.extraRuntimeInfo[key] = info;
+    }
 }
 
 @end

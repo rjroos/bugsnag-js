@@ -8,6 +8,8 @@
 + (BOOL)bugsnagStarted;
 + (BugsnagConfiguration *)configuration;
 + (void)updateCodeBundleId:(NSString *)codeBundleId;
++ (void)addRuntimeVersionInfo:(NSString *)info
+                      withKey:(NSString *)key;
 @end
 
 @interface BugsnagReactNative ()
@@ -25,6 +27,7 @@ RCT_EXPORT_METHOD(configureAsync:(NSDictionary *)readableMap
 }
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(configure:(NSDictionary *)readableMap) {
+    [self updateNotifierInfo:readableMap];
     self.configSerializer = [BugsnagConfigSerializer new];
     
     if (![Bugsnag bugsnagStarted]) {
@@ -94,6 +97,13 @@ RCT_EXPORT_METHOD(getPayloadInfo:(NSDictionary *)options
                          resolve:(RCTPromiseResolveBlock)resolve
                           reject:(RCTPromiseRejectBlock)reject) {
     resolve(@{});
+}
+
+- (void)updateNotifierInfo:(NSDictionary *)info {
+    NSString *reactNativeVersion = info[@"reactNativeVersion"];
+    NSString *engine = info[@"engine"];
+    [Bugsnag addRuntimeVersionInfo:reactNativeVersion withKey:@"reactNativeVersion"];
+    [Bugsnag addRuntimeVersionInfo:engine withKey:@"engine"];
 }
 
 - (BSGBreadcrumbType)breadcrumbTypeFromString:(NSString *)value {
